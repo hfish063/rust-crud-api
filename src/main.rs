@@ -4,8 +4,6 @@ mod route;
 
 use std::sync::Arc;
 
-use axum::{response::IntoResponse, Json};
-
 use dotenv::dotenv;
 use tokio::net::TcpListener;
 
@@ -44,15 +42,4 @@ async fn main() {
     axum::serve(listener, app.into_make_service())
         .await
         .unwrap();
-}
-
-pub async fn health_check_handler() -> impl IntoResponse {
-    const MESSAGE: &str = "API Services";
-
-    let json_response = serde_json::json!({
-        "status": "OK",
-        "message": MESSAGE
-    });
-
-    Json(json_response)
 }
