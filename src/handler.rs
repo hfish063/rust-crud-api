@@ -1,20 +1,7 @@
-use crate::{
-    model::{BookModel, BookModelResponse},
-    AppState,
-};
+use crate::{model::BookModel, AppState};
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 
 use std::sync::Arc;
-
-fn to_book_response(book: &BookModel) -> BookModelResponse {
-    BookModelResponse {
-        id: book.id.to_owned(),
-        title: book.title.to_owned(),
-        author: book.author.to_owned(),
-        page: book.page.to_owned(),
-        note: book.note.to_owned(),
-    }
-}
 
 pub async fn health_check_handler() -> impl IntoResponse {
     const MESSAGE: &str = "API Services";
@@ -27,6 +14,10 @@ pub async fn health_check_handler() -> impl IntoResponse {
     Json(json_response)
 }
 
+/**
+ * Returns list of all records stored in book table
+ * State(data) holds the shared program state from main.rs, containing copy of database pool
+ */
 pub async fn book_list_handler(
     State(data): State<Arc<AppState>>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
@@ -35,9 +26,10 @@ pub async fn book_list_handler(
         .await
         .unwrap();
 
-    let mut book_response: Vec<BookModelResponse> = Vec::new();
+    let mut book_response: Vec<BookModel> = Vec::new();
 
     for book in books {
+        // SqlRow fields should obtained from db should not be empty
         let row: BookModel = BookModel {
             id: book.id,
             title: book.title.unwrap(),
@@ -46,14 +38,24 @@ pub async fn book_list_handler(
             note: book.note.unwrap(),
         };
 
-        book_response.push(to_book_response(&row));
+        book_response.push(row);
     }
 
     let json_response = serde_json::json!({
         "status": "OK",
         "count": book_response.len(),
-        "books": book_response
+        "books": book_response,
     });
 
     Ok(Json(json_response))
+}
+
+/**
+ * Returns single record of book table with corresponding id field
+ * State(data) holds the shared program state from main.rs, containing copy of database pool
+ */
+pub async fn book_handler(
+    State(data): State<Arc<AppState>>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    Ok(Json(serde_json::json!({"status": "OK"})))
 }
